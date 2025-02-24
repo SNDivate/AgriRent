@@ -85,27 +85,20 @@ const equipmentData = {
       equipmentData.image = { image_url: imageUrl, public_id: publicId };
     }
 
+   
+
     const newEquipment = new Equipment(equipmentData);
     await newEquipment.save();
 
     return NextResponse.json(
-      {
-        message: "Equipment added successfully",
-        equipment: newEquipment,
-        success: true,
-      },
+      { message: 'Equipment added successfully', equipment: newEquipment },
       { status: 201 }
     );
   } catch (error) {
-    console.error("Server Error:", error);
+    console.error('Server Error:', error);
     return NextResponse.json(
-      {
-        error: "Internal Server Error",
-        message: error.message || "An unexpected error occurred",
-        success: false,
-        stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
-      },
+      { error: 'Internal Server Error', message: error.message || 'An unexpected error occurred' },
       { status: 500 }
     );
   }
-}
+  }

@@ -12,7 +12,14 @@ const BookingSchema = new mongoose.Schema({
     required:true,
     ref: 'User',
  },
-  rentalDate: { type: Date, required: true }
+ rentalStartDate: {
+  type: Date,
+  required: true
+},
+rentalEndDate: {
+  type: Date,
+  required: true
+}
 },{
     timestamps: true,
     });

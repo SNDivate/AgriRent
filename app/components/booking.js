@@ -5,13 +5,8 @@ import { useSession } from "next-auth/react";
 import {
   Card,
   CardBody,
+  CardHeader,
   Button,
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
   Modal,
   ModalContent,
   ModalHeader,
@@ -19,38 +14,26 @@ import {
   ModalFooter,
   useDisclosure,
   Spinner,
+  Chip,
+  Input,
+  Divider,
 } from "@nextui-org/react";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 export default function BookingPage() {
   const { data: session, status } = useSession();
-  const [bookings, setBookings] = useState([]);
   const [availableEquipment, setAvailableEquipment] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedEquipment, setSelectedEquipment] = useState(null);
-  const [rentalDate, setRentalDate] = useState("");
-  const [equipmentDetailsModal, setEquipmentDetailsModal] = useState(false);
+  const [rentalStartDate, setRentalStartDate] = useState("");
+  const [rentalEndDate, setRentalEndDate] = useState("");
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   useEffect(() => {
     if (status === "authenticated") {
-      fetchBookings();
       fetchAvailableEquipment();
     }
   }, [status]);
-
-  const fetchBookings = async () => {
-    try {
-      const response = await fetch(`/api/booking?userId=${session.user.id}`);
-      if (!response.ok) throw new Error("Failed to fetch bookings");
-      const data = await response.json();
-      setBookings(data);
-    } catch (error) {
-      console.error("Error fetching bookings:", error);
-      toast.error("Failed to fetch bookings");
-    }
-  };
 
   const fetchAvailableEquipment = async () => {
     try {
@@ -67,8 +50,20 @@ export default function BookingPage() {
   };
 
   const handleBooking = async () => {
-    if (!selectedEquipment || !rentalDate) {
-      toast.error("Please select equipment and rental date");
+    if (!selectedEquipment || !rentalStartDate || !rentalEndDate) {
+      toast.error("Please select rental start and end date");
+      return;
+    }
+
+    // Convert dates to Date objects
+    const startDate = new Date(rentalStartDate);
+    const endDate = new Date(rentalEndDate);
+    const availabilityStart = new Date(selectedEquipment.availabilityStart);
+    const availabilityEnd = new Date(selectedEquipment.availabilityEnd);
+
+    // Validate date range
+    if (startDate < availabilityStart || endDate > availabilityEnd || startDate > endDate) {
+      toast.error("Selected dates are outside the equipment's availability range or invalid");
       return;
     }
 
@@ -79,225 +74,111 @@ export default function BookingPage() {
         body: JSON.stringify({
           equipmentId: selectedEquipment._id,
           userId: session.user.id,
-          rentalDate,
+          rentalStartDate: rentalStartDate,
+          rentalEndDate: rentalEndDate,
         }),
       });
 
-      if (!response.ok) throw new Error("Failed to create booking");
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to create booking");
+      }
+
       toast.success("Booking created successfully");
       onClose();
-      fetchBookings();
       fetchAvailableEquipment();
     } catch (error) {
       console.error("Error creating booking:", error);
-      toast.error("Failed to create booking");
+      toast.error(error.message || "Failed to create booking");
     }
   };
-
-  const handleEquipmentClick = async (equipmentId) => {
-    try {
-      if (!equipmentId) {
-        throw new Error("Equipment ID is required");
-      }
-  
-      const response = await fetch(`/api/equipment`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ equipmentId }),
-      });
-  
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to fetch equipment details");
-      }
-  
-      const data = await response.json();
-  
-      if (!data || !data.equipment) {
-        throw new Error("No equipment data found");
-      }
-  
-      // Set the fetched equipment data from the response
-      setSelectedEquipment(data.equipment);
-      setEquipmentDetailsModal(true);
-    } catch (error) {
-      console.error("Error fetching equipment details:", error);
-      toast.error("Failed to fetch equipment details");
-    }
-  };
-
-  if (status === "loading" || isLoading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
-
-  if (status === "unauthenticated") {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <p className="text-danger text-lg">Please sign in to view your bookings.</p>
-      </div>
-    );
-  }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Your Bookings</h1>
+    <div className="container mx-auto px-6 py-8">
+      <h1 className="text-2xl font-bold mb-6">Available Equipment</h1>
+      {isLoading ? (
+        <Spinner size="lg" />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {availableEquipment.map((equipment) => (
+            <Card key={equipment._id} className="w-full">
+              <CardHeader className="flex gap-3">
+                <div className="relative w-24 h-24">
+                  <img
+                    src={equipment.image?.image_url || "/no-image.png"}
+                    alt={equipment.name}
+                    className="w-full h-full object-cover rounded-lg"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "/no-image.png";
+                      toast.error("Failed to load equipment image");
+                    }}
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <p className="text-lg font-semibold">{equipment.name}</p>
+                  <Chip size="sm" variant="flat">
+                    {equipment.condition || "Not specified"}
+                  </Chip>
+                </div>
+              </CardHeader>
+              <Divider />
+              <CardBody>
+                <p className="text-sm text-default-600">{equipment.description || "No description available"}</p>
+              </CardBody>
+              <Divider />
+              <Button color="primary" onClick={() => { setSelectedEquipment(equipment); onOpen(); }}>
+                View Details
+              </Button>
+            </Card>
+          ))}
+        </div>
+      )}
 
-      <Card className="mb-6">
-        <CardBody>
-          <Button color="primary" onPress={onOpen}>
-            Create New Booking
-          </Button>
-        </CardBody>
-      </Card>
-
-      <Card>
-        <CardBody>
-          <Table aria-label="Booking history table">
-            <TableHeader>
-              <TableColumn>Equipment</TableColumn>
-              <TableColumn>Rental Date</TableColumn>
-            </TableHeader>
-            <TableBody>
-              {bookings.map((booking) => (
-                <TableRow key={booking._id}>
-                  <TableCell>
-                    <button
-                      className="text-primary underline"
-                      onClick={() => handleEquipmentClick(booking.equipmentId._id)}
-                    >
-                      {booking.equipmentId.name}
-                    </button>
-                  </TableCell>
-                  <TableCell>
-                    {new Date(booking.rentalDate).toLocaleDateString()}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardBody>
-      </Card>
-
-      <Modal isOpen={isOpen} onClose={onClose}>
-        <ModalContent>
-          <ModalHeader>Create New Booking</ModalHeader>
-          <ModalBody>
-            <select
-              className="w-full p-2 mb-4 border rounded"
-              onChange={(e) =>
-                setSelectedEquipment(
-                  availableEquipment.find((eq) => eq._id === e.target.value)
-                )
-              }
-            >
-              <option value="">Select Equipment</option>
-              {availableEquipment.map((eq) => (
-                <option key={eq._id} value={eq._id}>
-                  {eq.name}
-                </option>
-              ))}
-            </select>
-            <input
-              type="date"
-              className="w-full p-2 border rounded"
-              value={rentalDate}
-              onChange={(e) => setRentalDate(e.target.value)}
-            />
-          </ModalBody>
-          <ModalFooter>
-            <Button color="danger" variant="light" onPress={onClose}>
-              Cancel
-            </Button>
-            <Button color="primary" onPress={handleBooking}>
-              Book Now
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-
-      <Modal
-        isOpen={equipmentDetailsModal}
-        onClose={() => setEquipmentDetailsModal(false)}
-      >
+      {/* Booking Modal */}
+      <Modal isOpen={isOpen} onClose={onClose} size="2xl">
         <ModalContent>
           <ModalHeader>Equipment Details</ModalHeader>
           <ModalBody>
-            {selectedEquipment ? (
-              <div>
-                {selectedEquipment.image && (
-                  <div className="relative w-full h-64 mb-4">
-                    <img
-                      src={selectedEquipment.image.includes('res.cloudinary.com') 
-                        ? selectedEquipment.image
-                        : `https://res.cloudinary.com/dizarh1il/image/upload/${selectedEquipment.image}`}
-                      alt={selectedEquipment.name}
-                      className="w-full h-full object-cover rounded"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        console.error('Image load failed:', e.target.src);
-                        e.target.src = '/no-image.png';
-                        toast.error('Failed to load equipment image');
-                      }}
-                      loading="lazy"
-                    />
-                  </div>
-                )}
-                
-                <h2 className="text-lg font-bold mb-2">{selectedEquipment.name}</h2>
-                
-                <p className="text-sm mb-4">
-                  {selectedEquipment.description || "Description is not available."}
+            {selectedEquipment && (
+              <div className="space-y-4">
+                <img
+                  src={selectedEquipment.image?.image_url || "/no-image.png"}
+                  alt={selectedEquipment.name}
+                  className="w-full h-64 object-cover rounded-lg"
+                />
+                <h2 className="text-xl font-bold">{selectedEquipment.name}</h2>
+                <p>{selectedEquipment.description}</p>
+                <p>
+                  <strong>Available from:</strong>{" "}
+                  {new Date(selectedEquipment.availabilityStart).toLocaleDateString()}
                 </p>
-                
-                <div className="space-y-2">
-                  {selectedEquipment.rentalPrice && (
-                    <p>
-                      <span className="font-semibold">Price:</span> ₹
-                      {selectedEquipment.rentalPrice}
-                    </p>
-                  )}
-                  {selectedEquipment.condition && (
-                    <p>
-                      <span className="font-semibold">Condition:</span>{" "}
-                      {selectedEquipment.condition}
-                    </p>
-                  )}
-                  {selectedEquipment.ownerName && (
-                    <p>
-                      <span className="font-semibold">Owner:</span>{" "}
-                      {selectedEquipment.ownerName}
-                    </p>
-                  )}
-                  {selectedEquipment.address && (
-                    <p>
-                      <span className="font-semibold">Address:</span>{" "}
-                      {selectedEquipment.address}
-                    </p>
-                  )}
-                  {selectedEquipment.contactNumber && (
-                    <p>
-                      <span className="font-semibold">Contact:</span>{" "}
-                      {selectedEquipment.contactNumber}
-                    </p>
-                  )}
-                </div>
+                <p>
+                  <strong>Available until:</strong>{" "}
+                  {new Date(selectedEquipment.availabilityEnd).toLocaleDateString()}
+                </p>
+                <Input
+                  type="date"
+                  label="Start Date"
+                  value={rentalStartDate}
+                  onChange={(e) => setRentalStartDate(e.target.value)}
+                />
+                <Input
+                  type="date"
+                  label="End Date"
+                  value={rentalEndDate}
+                  onChange={(e) => setRentalEndDate(e.target.value)}
+                />
               </div>
-            ) : (
-              <p className="text-danger">Equipment details are unavailable.</p>
             )}
           </ModalBody>
           <ModalFooter>
-            <Button
-              color="primary"
-              onPress={() => setEquipmentDetailsModal(false)}
-            >
+            <Button color="danger" onClick={onClose}>
               Close
+            </Button>
+            <Button color="primary" onClick={handleBooking}>
+              Book Now
             </Button>
           </ModalFooter>
         </ModalContent>
