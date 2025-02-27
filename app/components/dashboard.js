@@ -19,7 +19,7 @@ import {
 import Image from "next/image";
 import { toast } from "sonner";
 
-// Equipment Card Component
+
 // Equipment Card Component
 function EquipmentCard({ equipment, onSelect }) {
   const handleButtonClick = (event) => {
@@ -146,19 +146,10 @@ function EquipmentDetailPanel({ equipment, onClose, onDelete, onUpdate, onRefres
   const validateForm = () => {
     const newErrors = {};
     
-    // Validate required fields based on API requirements
-    const requiredFields = [
-      "name", 
-      "description", 
-      "condition", 
-      "rentalPrice", 
-      "ownerName", 
-      "contactNumber", 
-      "address", 
-      "availabilityStart", 
-      "availabilityEnd", 
-      "userId"
-    ];
+    // Required fields
+    const requiredFields = ["name", "description", "condition", "rentalPrice", 
+                           "ownerName", "contactNumber", "address", 
+                           "availabilityStart", "availabilityEnd", "userId"];
     
     requiredFields.forEach(field => {
       if (!formData[field]) {
@@ -166,24 +157,27 @@ function EquipmentDetailPanel({ equipment, onClose, onDelete, onUpdate, onRefres
       }
     });
     
-    // Validate condition field
-    const validConditions = ["new", "used", "damaged"];
-    if (formData.condition && !validConditions.includes(formData.condition.toLowerCase())) {
-      newErrors.condition = `Invalid condition. Allowed values: ${validConditions.join(", ")}`;
-    }
-    
     // Validate rental price is a number
     if (formData.rentalPrice && isNaN(parseFloat(formData.rentalPrice))) {
       newErrors.rentalPrice = "Rental price must be a number";
     }
     
     // Validate dates
-    if (formData.availabilityStart && isNaN(new Date(formData.availabilityStart).getTime())) {
-      newErrors.availabilityStart = "Invalid date format";
-    }
-    
-    if (formData.availabilityEnd && isNaN(new Date(formData.availabilityEnd).getTime())) {
-      newErrors.availabilityEnd = "Invalid date format";
+    if (formData.availabilityStart && formData.availabilityEnd) {
+      const startDate = new Date(formData.availabilityStart);
+      const endDate = new Date(formData.availabilityEnd);
+      
+      if (isNaN(startDate.getTime())) {
+        newErrors.availabilityStart = "Invalid date format";
+      }
+      
+      if (isNaN(endDate.getTime())) {
+        newErrors.availabilityEnd = "Invalid date format";
+      }
+      
+      if (startDate > endDate) {
+        newErrors.availabilityEnd = "End date must be after start date";
+      }
     }
     
     setErrors(newErrors);
@@ -195,7 +189,12 @@ function EquipmentDetailPanel({ equipment, onClose, onDelete, onUpdate, onRefres
       toast.error("Invalid equipment ID");
       return;
     }
-  
+    
+    if (!validateForm()) {
+      toast.error("Please fix the errors in the form");
+      return;
+    }
+    
     setIsSaving(true);
     try {
       // Create formatted data object with all required fields
@@ -207,17 +206,16 @@ function EquipmentDetailPanel({ equipment, onClose, onDelete, onUpdate, onRefres
         availabilityEnd: formData.availabilityEnd ? new Date(formData.availabilityEnd).toISOString() : null
       };
       
-      // Log data being sent for debugging
       console.log("Saving equipment with ID:", formData._id);
       console.log("Data being sent:", formattedData);
       
-      // Try with exact same structure as your API is expecting
-      const apiUrl = `/api/editequipment?id=${formData._id}`;
+      // Use the new API endpoint structure
+      const apiUrl = `/api/equipment/${formData._id}`;
       console.log("API URL:", apiUrl);
       
       const response = await fetch(apiUrl, {
         method: "PUT",
-        headers: { 
+        headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify(formattedData),
@@ -225,6 +223,8 @@ function EquipmentDetailPanel({ equipment, onClose, onDelete, onUpdate, onRefres
       
       // Log response status for debugging
       console.log("Response status:", response.status);
+      
+      
       
       // Try to get response data even if it's an error
       let responseData;
@@ -241,21 +241,25 @@ function EquipmentDetailPanel({ equipment, onClose, onDelete, onUpdate, onRefres
       }
       
       toast.success("Equipment updated successfully");
-      
-      // Update local state
-      const updatedEquipment = responseData.equipment || responseData;
-      onUpdate(updatedEquipment);
-      onRefresh();
-      
-      // Switch to details tab
-      setActiveTab("details");
-    } catch (error) {
-      console.error("Save error:", error);
-      toast.error(error.message || "Failed to update equipment");
-    } finally {
-      setIsSaving(false);
-    }
-  };
+
+    // Update local state
+    const updatedEquipment = responseData.equipment || responseData;
+    onUpdate(updatedEquipment);
+    onRefresh();
+    
+    // Switch to details tab
+    setActiveTab("details");
+  } catch (error) {
+    console.error("Save error:", error);
+    toast.error(error.message || "Failed to update equipment");
+  } finally {
+    setIsSaving(false);
+  }
+};
+
+if (isLoading) {
+  return <div className="p-4 text-center">Loading equipment data...</div>;
+}
   const handleDelete = async () => {
     if (!equipment?._id) {
       toast.error("Invalid equipment ID");
