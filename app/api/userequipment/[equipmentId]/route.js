@@ -29,24 +29,28 @@ export async function GET(req, { params }) {
             return NextResponse.json({ message: "No bookings found for this equipment", bookings: [] }, { status: 200 });
         }
 
-        // ✅ Format response
-        const formattedBookings = bookings.map((booking) => ({
-            bookingId: booking._id.toString(),
-            equipment: {
-                id: booking.equipmentId?._id.toString(),
-                name: booking.equipmentId?.name,
-                image: booking.equipmentId?.image?.image_url || "/no-image.png",
-            },
-            rentedBy: {
-                userId: booking.userId?._id.toString(),
-                name: booking.userId?.name,
-                email: booking.userId?.email,
-            },
-            rentalStartDate: booking.rentalStartDate,
-            rentalEndDate: booking.rentalEndDate,
-        }));
 
-        return NextResponse.json({ bookings: formattedBookings }, { status: 200 });
+
+// At the end of your API route function
+const formattedBookings = bookings.map(booking => ({
+    bookingId: booking._id.toString(),
+    startDate: booking.rentalStartDate,
+    endDate: booking.rentalEndDate,
+    userName: booking.userId.name,
+    userEmail: booking.userId.email,
+    equipmentName: booking.equipmentId.name,
+    equipmentId: booking.equipmentId._id.toString(),
+    price: booking.equipmentId.rentalPrice,
+    createdAt: booking.createdAt
+  }));
+  
+  console.log("Formatted bookings:", formattedBookings);
+  
+  return NextResponse.json({
+    bookings: formattedBookings,
+    message: "Bookings fetched successfully"
+  }, { status: 200 });
+
 
     } catch (error) {
         console.error("Error fetching bookings for equipment:", error);

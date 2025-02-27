@@ -2,23 +2,34 @@ import { NextResponse } from "next/server";
 import Equipment from "@/models/equipment";
 import User from "@/models/user";
 import { connectMongoDB } from "@/libs/connectDb";
+import mongoose from "mongoose";
 
 const validConditions = ["new", "used", "damaged"];
 
-export async function PUT(req, { params }) {  // ✅ Correct way to extract `params`
+export async function PUT(request, context) {
   try {
     await connectMongoDB();
 
-    const equipmentId = params.id;  // ✅ Corrected ID extraction
+    // Correctly access params without awaiting it
+    const { params } = context; 
+    const equipmentId = params?.id; // Correct way to access dynamic route param
 
     if (!equipmentId) {
       return NextResponse.json(
-        { error: "Equipment ID is required", success: false },
+        { error: "Equipment ID is missing in request parameters", success: false },
         { status: 400 }
       );
     }
 
-    const requestData = await req.json();
+    // Validate Equipment ID format before querying MongoDB
+    if (!mongoose.Types.ObjectId.isValid(equipmentId)) {
+      return NextResponse.json(
+        { error: "Invalid Equipment ID format", success: false },
+        { status: 400 }
+      );
+    }
+
+    const requestData = await request.json();
 
     // Find existing equipment
     const existingEquipment = await Equipment.findById(equipmentId);
