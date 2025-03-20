@@ -1,74 +1,67 @@
 "use client";
-import React, { useState } from "react";
-import { HoveredLink, Menu, MenuItem, ProductItem } from "./ui/navbar-menu";
-import { cn } from "@/libs/utils";
+import React from "react";
+import { AgriLogo } from "./AgriLogo";
+import {
+  Navbar,
+  NavbarBrand,
+  NavbarContent,
+  NavbarItem,
+  Link,
+  Button,
+} from "@heroui/react";
 
 export function NavbarDemo() {
   return (
     <div className="relative w-full flex items-center justify-center">
-      <Navbar className="top-2" />
-      {/* <p className="text-black dark:text-white">
-        The Navbar will show on top of the page
-      </p> */}
+      <CustomNavbar className="top-2 bg-topGreen text-black px-6 py-3 shadow-md" />
     </div>
   );
 }
 
-function Navbar({ className }) {
-  const [active, setActive] = useState(null);
+
+function CustomNavbar({ className }) {
   return (
-    <div
-      className={cn(
-        "fixed top-10 inset-x-0 max-w-4xl mx-auto z-50", // Increased max width for a larger navbar
-        className
-      )}
-    >
-      <Menu setActive={setActive}>
-        <MenuItem setActive={setActive} active={active} item="Services">
-          <div className="flex flex-col space-y-6 text-lg"> {/* Increased text size */}
-            <HoveredLink href="/web-dev">Web Development</HoveredLink>
-            <HoveredLink href="/interface-design">Interface Design</HoveredLink>
-            <HoveredLink href="/seo">Search Engine Optimization</HoveredLink>
-            <HoveredLink href="/branding">Branding</HoveredLink>
-          </div>
-        </MenuItem>
-        <MenuItem setActive={setActive} active={active} item="Products">
-          <div className="text-lg grid grid-cols-2 gap-10 p-6"> {/* Increased padding and text size */}
-            <ProductItem
-              title="Algochurn"
-              href="https://algochurn.com"
-              src="https://assets.aceternity.com/demos/algochurn.webp"
-              description="Prepare for tech interviews like never before."
-            />
-            <ProductItem
-              title="Tailwind Master Kit"
-              href="https://tailwindmasterkit.com"
-              src="https://assets.aceternity.com/demos/tailwindmasterkit.webp"
-              description="Production ready Tailwind css components for your next project"
-            />
-            <ProductItem
-              title="Moonbeam"
-              href="https://gomoonbeam.com"
-              src="https://assets.aceternity.com/demos/Screenshot+2024-02-21+at+11.51.31%E2%80%AFPM.png"
-              description="Never write from scratch again. Go from idea to blog in minutes."
-            />
-            <ProductItem
-              title="Rogue"
-              href="https://userogue.com"
-              src="https://assets.aceternity.com/demos/Screenshot+2024-02-21+at+11.47.07%E2%80%AFPM.png"
-              description="Respond to government RFPs, RFIs and RFQs 10x faster using AI"
-            />
-          </div>
-        </MenuItem>
-        <MenuItem setActive={setActive} active={active} item="Pricing">
-          <div className="flex flex-col space-y-6 text-lg"> {/* Increased text size */}
-            <HoveredLink href="/hobby">Hobby</HoveredLink>
-            <HoveredLink href="/individual">Individual</HoveredLink>
-            <HoveredLink href="/team">Team</HoveredLink>
-            <HoveredLink href="/enterprise">Enterprise</HoveredLink>
-          </div>
-        </MenuItem>
-      </Menu>
-    </div>
+    <Navbar className={`${className} flex justify-between`}>
+      {/* Left: Logo & Brand Name */}
+      <NavbarBrand className="flex items-center gap-2">
+        <AgriLogo />
+        <p className="font-bold text-white text-lg">AgriRent</p>
+      </NavbarBrand>
+
+      {/* Center: Navigation Links */}
+      <NavbarContent className="hidden sm:flex gap-6" justify="center">
+        <NavbarItem>
+          <Link color="foreground" href="#" className="text-gray-300 hover:text-white">
+            About
+          </Link>
+        </NavbarItem>
+        <NavbarItem>
+          <Link color="foreground" href="/user/equipments/page.js" className="text-gray-300 hover:text-white">
+            Equipment
+          </Link>
+        </NavbarItem>
+
+        <NavbarItem>
+          <Link color="foreground" href="\components\about" className="text-gray-300 hover:text-white">
+            Contact
+          </Link>
+        </NavbarItem>
+
+      </NavbarContent>
+
+      {/* Right: Login & Sign Up Buttons */}
+      <NavbarContent justify="end">
+        <NavbarItem className="hidden lg:flex">
+          <Link href="/login" className="text-gray-300 hover:text-white">
+            Login
+          </Link>
+        </NavbarItem>
+        <NavbarItem className="hidden lg:flex">
+          <Link href="/register" className="text-gray-300 hover:text-white">
+            Register
+          </Link>
+        </NavbarItem>
+      </NavbarContent>
+    </Navbar>
   );
 }

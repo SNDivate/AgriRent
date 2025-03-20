@@ -1,4 +1,4 @@
-import  EquipmentPage from '@/app/components/equipment'
+import EquipmentPage from '@/app/components/equipment'
 import React from 'react'
 
 const page = () => {
