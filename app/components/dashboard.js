@@ -32,38 +32,50 @@ function EquipmentCard({ equipment, onSelect }) {
   };
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-semibold mb-6">Dashboard</h1>
-
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <Loader2 className="animate-spin w-8 h-8 text-gray-500" />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {equipment.length > 0 ? (
-            equipment.map((item) => (
-              <Card key={item.id} className="shadow-lg rounded-xl">
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold">
-                    {item.name}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600">Type: {item.type}</p>
-                  <p className="text-gray-500">Price: ${item.price}/day</p>
-                  <Button className="mt-4 w-full">View Details</Button>
-                </CardContent>
-              </Card>
-            ))
+    <Card 
+      className="w-full cursor-pointer hover:shadow-lg transition-shadow"
+      onClick={() => onSelect(equipment)}
+    >
+      <CardHeader className="flex gap-3">
+        <div className="relative w-24 h-24">
+          {equipment.image ? (
+            <Image
+              alt={equipment?.name || "Equipment"}
+              src={equipment.image || "/no-image.png"}
+              fill
+              className="object-cover rounded-lg"
+            />
           ) : (
-            <p className="text-center text-gray-500 col-span-3">
-              No equipment available.
-            </p>
+            <div className="w-24 h-24 flex items-center justify-center bg-gray-200 rounded-lg">
+              <span className="text-gray-400">No Image</span>
+            </div>
           )}
         </div>
-      )}
-    </div>
+        <div className="flex flex-col">
+          <p className="text-lg font-semibold">{equipment.name}</p>
+          {/* <Chip color={equipment.isBooked ? "danger" : "success"} size="sm" variant="flat">
+            {equipment.isBooked ? "Booked" : "Available"}
+          </Chip> */}
+        </div>
+      </CardHeader>
+      <Divider />
+      <CardBody>
+        <p className="text-sm text-default-600 line-clamp-2">
+          {equipment.description || "No description available"}
+        </p>
+      </CardBody>
+      <Divider />
+      <CardFooter className="flex justify-between items-center">
+        <p className="text-lg font-semibold text-primary">₹{equipment.rentalPrice || 0}/day</p>
+        <Button 
+          color="primary" 
+          size="sm" 
+          onPress={handleButtonClick} // Using onPress instead of onClick for NextUI
+        >
+          View Details
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }
 
@@ -323,14 +335,14 @@ if (isLoading) {
               )
             ))}
           </div>
-          <div className="flex justify-end gap-2 mt-4">
+          {/* <div className="flex justify-end gap-2 mt-4">
             <Button color="danger" onClick={handleDelete} isLoading={isDeleting}>
               Delete Equipment
             </Button>
             <Button color="primary" onClick={() => setActiveTab("edit")}>
               Edit Details
             </Button>
-          </div>
+          </div> */}
         </div>
       )}
 
@@ -402,23 +414,23 @@ if (isLoading) {
               }
               
               // Rental price
-              if (key === "rentalPrice") {
-                return (
-                  <Input
-                    key={key}
-                    label="Rental Price (₹/day) *"
-                    name={key}
-                    type="number"
-                    value={value || ""}
-                    onChange={handleInputChange}
-                    className="w-full"
-                    startContent={<div className="pointer-events-none">₹</div>}
-                    isRequired
-                    isInvalid={!!errors[key]}
-                    errorMessage={errors[key]}
-                  />
-                );
-              }
+              // if (key === "rentalPrice") {
+              //   return (
+              //     <Input
+              //       key={key}
+              //       label="Rental Price (₹/day) *"
+              //       name={key}
+              //       type="number"
+              //       value={value || ""}
+              //       onChange={handleInputChange}
+              //       className="w-full"
+              //       startContent={<div className="pointer-events-none">₹</div>}
+              //       isRequired
+              //       isInvalid={!!errors[key]}
+              //       errorMessage={errors[key]}
+              //     />
+              //   );
+              // }
               
               // Regular fields
               const isRequired = ["name", "ownerName", "contactNumber", "address", "userId"].includes(key);
@@ -558,8 +570,9 @@ export default function UserDashboard() {
         </div>
       ) : equipment.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-64 bg-gray-50 rounded-lg">
-          <p className="text-gray-500 mb-4">You haven't added any equipment yet</p>
-          <Button color="primary">Add New Equipment</Button>
+         <Button color="primary" onClick={() => router.push("/user/equipment")}>
+        Add New Equipment
+      </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
