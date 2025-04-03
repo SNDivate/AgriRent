@@ -8,10 +8,15 @@ export async function POST(req) {
     try {
         await connectMongoDB();
         const data = await req.json();
-        const { equipmentId, userId, rentalStartDate, rentalEndDate } = data;
+        const { equipmentId, userId, rentalStartDate, rentalEndDate, paymentAmount } = data;
 
-        if (!equipmentId || !userId || !rentalStartDate || !rentalEndDate) {
+        if (!equipmentId || !userId || !rentalStartDate || !rentalEndDate || !paymentAmount) {
             return NextResponse.json({ error: "All fields are required" }, { status: 400 });
+        }
+
+        // Validate payment amount
+        if (isNaN(parseFloat(paymentAmount)) || parseFloat(paymentAmount) <= 0) {
+            return NextResponse.json({ error: "Invalid payment amount" }, { status: 400 });
         }
 
         // Fetch equipment details
@@ -55,8 +60,14 @@ export async function POST(req) {
             );
         }
 
-        // Create booking
-        const newBooking = new Booking({ equipmentId, userId, rentalStartDate, rentalEndDate });
+        // Create booking with payment amount
+        const newBooking = new Booking({ 
+            equipmentId, 
+            userId, 
+            rentalStartDate, 
+            rentalEndDate,
+            paymentAmount: parseFloat(paymentAmount)
+        });
         await newBooking.save();
 
         console.log("Booking Created Successfully:", newBooking);
